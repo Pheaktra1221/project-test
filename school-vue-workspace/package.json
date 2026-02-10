@@ -1,0 +1,19 @@
+{
+  "name": "school-vue-workspace",
+  "version": "1.0.0",
+  "description": "A Vue.js project for managing school scores.",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run client",
+    "client": "cd client && npm install && npm run dev",
+    "build": "cd client && npm run build"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "vue": "^3.2.0"
+  },
+  "devDependencies": {
+    "vite": "^2.0.0"
+  }
+}

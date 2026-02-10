@@ -1,0 +1,19 @@
+**/node_modules/
+**/dist/
+.env
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore uploaded files and keys
+server/uploads/
+server/config/keys/*.json
+server/config/keys/keys/*.json
+server/config/keys/**/*
+server/keys/*.json
+
+# Ignore IDE and editor folders
+.vscode/
+.idea/
