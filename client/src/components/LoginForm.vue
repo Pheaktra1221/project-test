@@ -76,7 +76,8 @@ const isLoading = ref(false);
 // Use Vite environment variable if provided; otherwise use relative `/api` so
 // the app continues to work if host/port change (dev server proxy or reverse
 // proxy can route requests to the backend).
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const rawApiUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = (rawApiUrl.replace(/\/$/, '') || '') + '/api';
 
 const handleLogin = async () => {
   errorMessage.value = '';

@@ -181,7 +181,6 @@ import axios from 'axios';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 // Axios configuration
-axios.defaults.baseURL = '/api';
 axios.defaults.withCredentials = true;
 
 // State
