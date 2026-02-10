@@ -37,9 +37,9 @@ console.log('  GOOGLE_OAUTH_REDIRECT_URI:', process.env.GOOGLE_OAUTH_REDIRECT_UR
 console.log('  GOOGLE_DRIVE_KEY_FILE:', process.env.GOOGLE_DRIVE_KEY_FILE || 'Not set');
 
 // ========== CORRECT PATHS FOR YOUR STRUCTURE ==========
-const KEYS_DIR = path.join(__dirname, '..', 'config', 'keys', 'keys');
-const DRIVE_KEY_PATH = path.join(KEYS_DIR, 'drive-key.json');
-const OAUTH_TOKEN_PATH = path.join(KEYS_DIR, 'oauth-token.json');
+const KEYS_DIR = process.env.GOOGLE_KEYS_DIR || path.join(__dirname, '..', 'config', 'keys', 'keys');
+const DRIVE_KEY_PATH = process.env.GOOGLE_DRIVE_KEY_FILE || path.join(KEYS_DIR, 'drive-key.json');
+const OAUTH_TOKEN_PATH = process.env.GOOGLE_OAUTH_TOKEN_PATH || path.join(KEYS_DIR, 'oauth-token.json');
 
 console.log('\n=== PATH CONFIGURATION ===');
 console.log('Keys directory:', KEYS_DIR);
