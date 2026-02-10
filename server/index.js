@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import statisticsRoutes from './routes/statistics.js';
-import classListRoutes from './routes/ClassListapi.js'; 
+import classListRoutes from './routes/ClassListAPI.js'; 
 import teacherRoutes from './routes/Teacher.js';
 import subjectRouter from './routes/subject.js';
 import attendanceRouter from './routes/attendance.js';
