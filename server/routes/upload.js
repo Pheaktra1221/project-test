@@ -41,6 +41,13 @@ const KEYS_DIR = process.env.GOOGLE_KEYS_DIR || path.join(__dirname, '..', 'conf
 const DRIVE_KEY_PATH = process.env.GOOGLE_DRIVE_KEY_FILE || path.join(KEYS_DIR, 'drive-key.json');
 const OAUTH_TOKEN_PATH = process.env.GOOGLE_OAUTH_TOKEN_PATH || path.join(KEYS_DIR, 'oauth-token.json');
 
+let KEYS_DIR = process.env.GOOGLE_KEYS_DIR || path.join(__dirname, '..', 'config', 'keys', 'keys');
+if (!process.env.GOOGLE_KEYS_DIR && fs.existsSync('/data/keys')) {
+  KEYS_DIR = '/data/keys';
+}
+let DRIVE_KEY_PATH = process.env.GOOGLE_DRIVE_KEY_FILE || path.join(KEYS_DIR, 'drive-key.json');
+let OAUTH_TOKEN_PATH = process.env.GOOGLE_OAUTH_TOKEN_PATH || path.join(KEYS_DIR, 'oauth-token.json');
+
 console.log('\n=== PATH CONFIGURATION ===');
 console.log('Keys directory:', KEYS_DIR);
 console.log('Drive key path:', DRIVE_KEY_PATH);
