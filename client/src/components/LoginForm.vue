@@ -77,7 +77,8 @@ const isLoading = ref(false);
 // the app continues to work if host/port change (dev server proxy or reverse
 // proxy can route requests to the backend).
 const rawApiUrl = import.meta.env.VITE_API_URL || '';
-const API_BASE_URL = (rawApiUrl.replace(/\/$/, '') || '') + '/api';
+const cleaned = rawApiUrl.replace(/\/$/, '');
+const API_BASE_URL = cleaned.endsWith('/api') ? cleaned : (cleaned ? cleaned + '/api' : '/api');
 
 const handleLogin = async () => {
   errorMessage.value = '';

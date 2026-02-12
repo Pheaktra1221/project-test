@@ -37,9 +37,10 @@ if (!process.env.PORT) {
 
 const app = express();
 const httpServer = createServer(app);
+const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : "*",
+    origin: allowedOrigins.length ? (allowedOrigins.includes('*') ? true : allowedOrigins) : "*",
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -65,33 +66,30 @@ app.set('io', io);
 
 
 // Middleware
+const parseOrigins = (s) => s ? s.split(',').map(v => v.trim()).filter(Boolean) : [];
+const configuredOrigins = parseOrigins(process.env.CORS_ORIGIN);
+const isWildcardMatch = (pattern, origin) => {
+  if (!pattern.startsWith('https://*.')) return false;
+  const domain = pattern.slice('https://*.'.length);
+  if (!origin.startsWith('https://')) return false;
+  const o = origin.replace('https://', '');
+  return o === domain || o.endsWith('.' + domain);
+};
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (!configuredOrigins.length) return true;
+  if (configuredOrigins.includes('*')) return true;
+  if (configuredOrigins.includes(origin)) return true;
+  for (const p of configuredOrigins) {
+    if (isWildcardMatch(p, origin)) return true;
+  }
+  if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) return true;
+  return false;
+};
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin is allowed
-    if (allowedOrigins.indexOf(origin) !== -1 || !process.env.CORS_ORIGIN || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      // For development, we might want to log this but allow it, or fail
-      console.log('Origin not explicitly allowed:', origin);
-      // Allow localhost and local network IPs
-      // Common private ranges: 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x
-      const isLocal = origin.startsWith('http://localhost') || 
-                      origin.startsWith('http://127.0.0.1') ||
-                      origin.startsWith('http://192.168.') ||
-                      origin.startsWith('http://10.') ||
-                      /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./.test(origin);
-
-      if (isLocal) {
-         callback(null, true);
-      } else {
-         callback(new Error('Not allowed by CORS'));
-      }
-    }
+    if (isAllowedOrigin(origin)) callback(null, true);
+    else callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -99,7 +97,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// app.options('*', cors(corsOptions)); // Enable pre-flight across-the-board
+app.options('*', cors(corsOptions)); // Enable pre-flight across-the-board
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
@@ -109,6 +107,11 @@ import pool from './config/db.js';
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.type('text/plain').send('Backend service is running. Use /api/health');
 });
 
 // API Routes

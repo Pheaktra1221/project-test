@@ -24,7 +24,8 @@ export const useAppStore = defineStore('app', {
     },
     connectSocket() {
       if (this.socket) return
-      const backendUrl = (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/$/, '')
+      let backendUrl = (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/$/, '')
+      if (backendUrl.endsWith('/api')) backendUrl = backendUrl.slice(0, -4)
       const socket = io(backendUrl, { path: '/socket.io' })
       this.socket = socket
       socket.on('connect', () => {

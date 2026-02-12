@@ -11,7 +11,7 @@ import router from './router/index.js'
 // "http://localhost:3001/api/statistics/...".
 const rawApiUrl = import.meta.env.VITE_API_URL || '';
 const normalizedBase = rawApiUrl.replace(/\/$/, '');
-axios.defaults.baseURL = (normalizedBase ? normalizedBase : '') + '/api';
+axios.defaults.baseURL = normalizedBase.endsWith('/api') ? normalizedBase : (normalizedBase ? normalizedBase + '/api' : '/api');
 
 // If a token was previously stored (user already logged in), set axios Authorization header
 const existingToken = localStorage.getItem('token');
