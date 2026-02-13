@@ -61,6 +61,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { login, setAuthToken } from '../api/auth.js';
 
 const credentials = ref({
   username: '',
@@ -76,9 +77,7 @@ const isLoading = ref(false);
 // Use Vite environment variable if provided; otherwise use relative `/api` so
 // the app continues to work if host/port change (dev server proxy or reverse
 // proxy can route requests to the backend).
-const rawApiUrl = import.meta.env.VITE_API_URL || '';
-const cleaned = rawApiUrl.replace(/\/$/, '');
-const API_BASE_URL = cleaned.endsWith('/api') ? cleaned : (cleaned ? cleaned + '/api' : '/api');
+const API_BASE_URL = axios.defaults.baseURL || '/api'
 
 const handleLogin = async () => {
   errorMessage.value = '';
@@ -92,28 +91,7 @@ const handleLogin = async () => {
   isLoading.value = true;
 
   try {
-    // Try new auth endpoint first
-    let response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials.value),
-    });
-
-    let data = await response.json();
-
-    // Fall back to old login endpoint if new one fails
-    if (!data.success) {
-      response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials.value),
-      });
-      data = await response.json();
-    }
+    const data = await login(credentials.value);
 
     if (data.success) {
       successMessage.value = 'ចូលប្រព័ន្ធជោគជ័យ!';
@@ -121,8 +99,7 @@ const handleLogin = async () => {
       localStorage.setItem('user', JSON.stringify(data.user));
       if (data.token) {
         localStorage.setItem('token', data.token);
-        // set axios default Authorization header for other components
-        try { axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`; } catch(e) {}
+        setAuthToken(data.token);
       }
       
       // Remember Me logic
