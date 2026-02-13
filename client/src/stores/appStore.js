@@ -3,7 +3,13 @@ import { io } from 'socket.io-client'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
-    apiBaseUrl: import.meta.env.VITE_API_URL || '/api',
+    apiBaseUrl: (() => {
+      const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+      if (base) return base
+      const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+      if (url) return url.endsWith('/api') ? url : url + '/api'
+      return '/api'
+    })(),
     user: null,
     authorized: false,
     socket: null,
