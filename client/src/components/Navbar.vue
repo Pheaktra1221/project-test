@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { io } from 'socket.io-client'
+import { useAppStore } from '../stores/appStore'
 import { useRouter } from 'vue-router'
 import logo from '../assets/vue.svg'
 import { imagePreview, formatTime } from '../utils/helpers'
@@ -50,7 +51,13 @@ const openSettings = () => {
 }
 
 const imageError = ref(false)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = (() => {
+  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  if (base) return base
+  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+  if (url) return url.endsWith('/api') ? url : url + '/api'
+  return '/api'
+})()
 const token = () => localStorage.getItem('token')
 
 const userRole = computed(() => props.user?.role?.toLowerCase() || 'student')
@@ -136,10 +143,14 @@ const handleClickOutside = (event) => {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   loadNotifications()
-  socket.value = io('/', { path: '/socket.io' })
-  socket.value.on('broadcast_notification', (payload) => {
-    if (payload) notifications.value = [payload, ...notifications.value]
-  })
+  const appStore = useAppStore()
+  appStore.connectSocket()
+  socket.value = appStore.socket
+  if (socket.value) {
+    socket.value.on('broadcast_notification', (payload) => {
+      if (payload) notifications.value = [payload, ...notifications.value]
+    })
+  }
 })
 
 onUnmounted(() => {
