@@ -16,7 +16,13 @@ const currentUser = ref(null)
 const currentView = ref('dashboard')
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = (() => {
+  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  if (base) return base
+  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+  if (url) return url.endsWith('/api') ? url : url + '/api'
+  return '/api'
+})()
 const presenceInterval = ref(null)
 
 const updateCurrentView = (path) => {

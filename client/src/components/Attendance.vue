@@ -1064,7 +1064,13 @@ import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { imagePreview, formatDate, formatTime } from '../utils/helpers';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = (() => {
+  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  if (base) return base
+  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+  if (url) return url.endsWith('/api') ? url : url + '/api'
+  return '/api'
+})()
 
 // State
 const userProfile = ref({});
