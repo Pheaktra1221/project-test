@@ -30,7 +30,10 @@ export const useAppStore = defineStore('app', {
     },
     connectSocket() {
       if (this.socket) return
-      let backendUrl = (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/$/, '')
+      let backendUrl = (this.apiBaseUrl || '').replace(/\/$/, '')
+      if (!backendUrl) {
+        backendUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_DEFAULT || 'https://evident-coreen-tra-2a78039b.koyeb.app/api').replace(/\/$/, '')
+      }
       if (backendUrl.endsWith('/api')) backendUrl = backendUrl.slice(0, -4)
       const socket = io(backendUrl, { path: '/socket.io' })
       this.socket = socket

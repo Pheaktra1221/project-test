@@ -3,7 +3,8 @@ export const API_BASE_URL = (() => {
   if (base) return base.endsWith('/api') ? base : base + '/api'
   const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
   if (url) return url.endsWith('/api') ? url : url + '/api'
-  return '/api'
+  const fallback = (import.meta.env.VITE_API_DEFAULT || 'https://evident-coreen-tra-2a78039b.koyeb.app/api').replace(/\/$/, '')
+  return fallback.endsWith('/api') ? fallback : fallback + '/api'
 })()
 
 export const imagePreview = (raw) => {

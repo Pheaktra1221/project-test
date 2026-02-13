@@ -9,9 +9,9 @@ import router from './router/index.js'
 // is set to a host (e.g. "http://localhost:3001"). This avoids requests
 // being sent to e.g. "http://localhost:3001/statistics/..." instead of
 // "http://localhost:3001/api/statistics/...".
-const rawApiUrl = import.meta.env.VITE_API_URL || '';
+const rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_DEFAULT || 'https://evident-coreen-tra-2a78039b.koyeb.app/api';
 const normalizedBase = rawApiUrl.replace(/\/$/, '');
-axios.defaults.baseURL = normalizedBase.endsWith('/api') ? normalizedBase : (normalizedBase ? normalizedBase + '/api' : '/api');
+axios.defaults.baseURL = normalizedBase.endsWith('/api') ? normalizedBase : (normalizedBase ? normalizedBase + '/api' : 'https://evident-coreen-tra-2a78039b.koyeb.app/api');
 
 // If a token was previously stored (user already logged in), set axios Authorization header
 const existingToken = localStorage.getItem('token');
