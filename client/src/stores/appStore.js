@@ -35,7 +35,7 @@ export const useAppStore = defineStore('app', {
         backendUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_DEFAULT || 'https://evident-coreen-tra-2a78039b.koyeb.app/api').replace(/\/$/, '')
       }
       if (backendUrl.endsWith('/api')) backendUrl = backendUrl.slice(0, -4)
-      const socket = io(backendUrl, { path: '/socket.io' })
+      const socket = io(backendUrl, { path: '/socket.io', transports: ['websocket', 'polling'], withCredentials: true })
       this.socket = socket
       socket.on('connect', () => {
         this.socketConnected = true

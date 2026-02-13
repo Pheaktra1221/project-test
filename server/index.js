@@ -41,7 +41,9 @@ const defaultOrigins = ['https://*.pages.dev', 'https://*.koyeb.app'];
 const allowedOrigins = Array.from(new Set([...(process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean), ...defaultOrigins]));
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins.length ? (allowedOrigins.includes('*') ? true : allowedOrigins) : "*",
+    origin: (origin, callback) => {
+      callback(null, true);
+    },
     methods: ["GET", "POST"],
     credentials: true
   }
