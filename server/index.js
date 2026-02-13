@@ -37,7 +37,8 @@ if (!process.env.PORT) {
 
 const app = express();
 const httpServer = createServer(app);
-const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+const defaultOrigins = ['https://*.pages.dev', 'https://*.koyeb.app'];
+const allowedOrigins = Array.from(new Set([...(process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean), ...defaultOrigins]));
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins.length ? (allowedOrigins.includes('*') ? true : allowedOrigins) : "*",
@@ -67,7 +68,7 @@ app.set('io', io);
 
 // Middleware
 const parseOrigins = (s) => s ? s.split(',').map(v => v.trim()).filter(Boolean) : [];
-const configuredOrigins = parseOrigins(process.env.CORS_ORIGIN);
+const configuredOrigins = Array.from(new Set([...(parseOrigins(process.env.CORS_ORIGIN)), ...defaultOrigins]));
 const isWildcardMatch = (pattern, origin) => {
   if (!pattern.startsWith('https://*.')) return false;
   const domain = pattern.slice('https://*.'.length);
@@ -97,7 +98,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable pre-flight across-the-board
+app.options(/.*/, cors(corsOptions)); // Enable pre-flight across-the-board
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
@@ -148,7 +149,7 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8000;
 const HOST = process.env.HOST || '0.0.0.0'
 
 httpServer.listen(PORT, HOST, () => {

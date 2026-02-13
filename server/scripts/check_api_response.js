@@ -2,7 +2,7 @@
 import fetch from 'node-fetch';
 
 async function checkApi() {
-  const ports = [3001, 3002, 3000];
+  const ports = [8000, 3001, 3002, 3000];
   
   for (const port of ports) {
     try {

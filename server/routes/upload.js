@@ -36,11 +36,6 @@ console.log('  GOOGLE_OAUTH_CLIENT_SECRET:', process.env.GOOGLE_OAUTH_CLIENT_SEC
 console.log('  GOOGLE_OAUTH_REDIRECT_URI:', process.env.GOOGLE_OAUTH_REDIRECT_URI || '✗ MISSING');
 console.log('  GOOGLE_DRIVE_KEY_FILE:', process.env.GOOGLE_DRIVE_KEY_FILE || 'Not set');
 
-// ========== CORRECT PATHS FOR YOUR STRUCTURE ==========
-const KEYS_DIR = process.env.GOOGLE_KEYS_DIR || path.join(__dirname, '..', 'config', 'keys', 'keys');
-const DRIVE_KEY_PATH = process.env.GOOGLE_DRIVE_KEY_FILE || path.join(KEYS_DIR, 'drive-key.json');
-const OAUTH_TOKEN_PATH = process.env.GOOGLE_OAUTH_TOKEN_PATH || path.join(KEYS_DIR, 'oauth-token.json');
-
 let KEYS_DIR = process.env.GOOGLE_KEYS_DIR || path.join(__dirname, '..', 'config', 'keys', 'keys');
 if (!process.env.GOOGLE_KEYS_DIR && fs.existsSync('/data/keys')) {
   KEYS_DIR = '/data/keys';

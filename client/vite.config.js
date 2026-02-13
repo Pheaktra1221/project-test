@@ -10,13 +10,13 @@ export default defineConfig({
     // Proxy API requests during development to the backend
     proxy: {
       '/api': {
-        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3001',
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
       '/socket.io': {
-        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3001',
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
         changeOrigin: true,
         ws: true,
       },
