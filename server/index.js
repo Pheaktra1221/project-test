@@ -37,69 +37,44 @@ if (!process.env.PORT) {
 
 const app = express();
 
-// CORS configuration - Allow all origins
-const corsOptions = {
-  origin: true, // This reflects the request origin back
-  credentials: true, // Allow credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
-};
+// 1. Create one Master CORS configuration 
+const masterCorsOptions = { 
+  // Using a callback function guarantees the origin is reflected correctly, 
+  // bypassing the strict browser rules against mixing '*' with credentials. 
+  origin: (origin, callback) => { 
+    callback(null, true); // Allow absolutely everything 
+  }, 
+  credentials: true, 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'] 
+}; 
 
-// Apply CORS middleware to all routes first
-app.use(cors(corsOptions));
+// 2. Apply to standard Express API routes 
+app.use(cors(masterCorsOptions)); 
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Create HTTP server 
+const httpServer = createServer(app); 
 
-// Create HTTP server
-const httpServer = createServer(app);
+// 3. Apply the EXACT same CORS config to Socket.IO 
+const io = new Server(httpServer, { 
+  cors: masterCorsOptions, 
+  transports: ['polling', 'websocket'], 
+  path: '/socket.io/' 
+}); 
 
-// Socket.IO with explicit CORS configuration
-const io = new Server(httpServer, {
-  cors: {
-    origin: true, // This allows any origin
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
-  },
-  allowEIO3: true,
-  transports: ['polling', 'websocket'], // Polling first for better compatibility
-  path: '/socket.io/',
-  // Add these settings to ensure CORS headers are set on polling responses
-  allowRequest: (req, callback) => {
-    callback(null, true); // Allow all requests
-  }
-});
+// Socket.io connection handler 
+io.on('connection', (socket) => { 
+  console.log('User connected to socket:', socket.id); 
 
-// Middleware to set CORS headers for all requests including socket.io polling
-app.use((req, res, next) => {
-  // Set CORS headers for every request
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+  socket.on('disconnect', () => { 
+    console.log('User disconnected:', socket.id); 
+  }); 
 
-// Socket.io connection handler
-io.on('connection', (socket) => {
-  console.log('User connected to socket:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-
-  // Listen for ranking updates triggers
-  socket.on('trigger_ranking_update', (data) => {
-    // Broadcast to all clients to refresh their rankings
-    io.emit('ranking_update', data);
-  });
+  // Listen for ranking updates triggers 
+  socket.on('trigger_ranking_update', (data) => { 
+    // Broadcast to all clients to refresh their rankings 
+    io.emit('ranking_update', data); 
+  }); 
 });
 
 // Make io available globally or via app
@@ -201,6 +176,7 @@ httpServer.listen(PORT, HOST, () => {
     }
   } catch (e) {
     // best-effort
+    console.log('Error listing network interfaces:', e.message || e)
   }
 });
 
