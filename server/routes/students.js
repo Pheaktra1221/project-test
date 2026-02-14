@@ -12,7 +12,7 @@ const emitRefresh = (req, resource) => {
 };
 
 // Get all students with pagination
-router.get('/students', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 50, search = '' } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -74,7 +74,7 @@ router.get('/students', async (req, res) => {
 });
 
 // Get single student
-router.get('/students/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const connection = await pool.getConnection();
@@ -101,7 +101,7 @@ router.get('/students/:id', async (req, res) => {
 });
 
 // Create student
-router.post('/students', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     // Accept different casing for StudentID and other fields sent from frontend
     const body = req.body || {}
@@ -172,7 +172,7 @@ router.post('/students', async (req, res) => {
 });
 
 // Update student
-router.put('/students/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -193,7 +193,7 @@ router.put('/students/:id', async (req, res) => {
 });
 
 // Delete student
-router.delete('/students/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const connection = await pool.getConnection();
@@ -209,7 +209,7 @@ router.delete('/students/:id', async (req, res) => {
 });
 
 // Get next available student ID
-router.get('/students-id/next', async (req, res) => {
+router.get('/next-id/next', async (req, res) => {
   const connection = await pool.getConnection();
   
   try {

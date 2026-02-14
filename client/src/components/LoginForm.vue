@@ -62,6 +62,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { login, setAuthToken } from '../api/auth.js';
+import { API_BASE_URL } from '../utils/helpers.js';
 
 const credentials = ref({
   username: '',
@@ -72,12 +73,6 @@ const rememberMe = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 const isLoading = ref(false);
-
-
-// Use Vite environment variable if provided; otherwise use relative `/api` so
-// the app continues to work if host/port change (dev server proxy or reverse
-// proxy can route requests to the backend).
-const API_BASE_URL = axios.defaults.baseURL || '/api'
 
 const handleLogin = async () => {
   errorMessage.value = '';

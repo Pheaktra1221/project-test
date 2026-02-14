@@ -13,11 +13,11 @@ const addNotification = (payload) => {
   }
 };
 
-router.get('/notifications', verifyToken, (req, res) => {
+router.get('/', verifyToken, (req, res) => {
   res.json({ success: true, data: notifications });
 });
 
-router.post('/notifications/broadcast', verifyToken, checkRole(['admin']), (req, res) => {
+router.post('/broadcast', verifyToken, checkRole(['admin']), (req, res) => {
   const { title, message, type } = req.body || {};
   if (!title || !message) {
     return res.status(400).json({ success: false, message: 'Title and message are required' });

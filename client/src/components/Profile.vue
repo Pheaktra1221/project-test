@@ -205,14 +205,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-
-const API_BASE_URL = (() => {
-  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  if (base) return base.endsWith('/api') ? base : base + '/api'
-  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-  if (url) return url.endsWith('/api') ? url : url + '/api'
-  return '/api'
-})()
+import { API_BASE_URL, imagePreview } from '../utils/helpers'
 
 const profile = ref({
   id: '',
@@ -259,24 +252,6 @@ const getAuthHeaders = () => {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   }
-}
-
-const imagePreview = (raw) => {
-  if (!raw) return ''
-  if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(raw)) return raw
-  const driveFileMatch = String(raw).match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
-  if (driveFileMatch) return `${API_BASE_URL}/upload/preview?url=${encodeURIComponent(raw)}`
-  const openMatch = String(raw).match(/[?&]id=([a-zA-Z0-9_-]+)/)
-  if (openMatch) return `${API_BASE_URL}/upload/preview?url=${encodeURIComponent(raw)}`
-  if (String(raw).includes('webContentLink') || String(raw).includes('webViewLink') || String(raw).includes('uc?id=')) {
-    return `${API_BASE_URL}/upload/preview?url=${encodeURIComponent(raw)}`
-  }
-  const plainIdMatch = String(raw).match(/^[a-zA-Z0-9_-]{10,}$/)
-  if (plainIdMatch) {
-    const driveUrl = `https://drive.google.com/uc?id=${plainIdMatch[0]}`
-    return `${API_BASE_URL}/upload/preview?url=${encodeURIComponent(driveUrl)}`
-  }
-  return raw
 }
 
 

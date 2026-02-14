@@ -36,15 +36,41 @@ if (!process.env.PORT) {
 }
 
 const app = express();
+
+// Middleware - Apply CORS as early as possible
+const corsOptions = {
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+
+// Custom middleware to ensure CORS headers for socket.io polling
+app.use((req, res, next) => {
+  if (req.url.startsWith('/socket.io/')) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+  }
+  next();
+});
+
 const httpServer = createServer(app);
-const defaultOrigins = ['https://*.pages.dev', 'https://*.koyeb.app'];
-const allowedOrigins = Array.from(new Set([...(process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean), ...defaultOrigins]));
 const io = new Server(httpServer, {
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'],
-    credentials: false
-  }
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: false,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  },
+  allowEIO3: true, // Compatibility for older clients
+  transports: ['websocket', 'polling']
 });
 
 // Socket.io connection handler
@@ -67,38 +93,6 @@ app.set('io', io);
 
 
 // Middleware
-const parseOrigins = (s) => s ? s.split(',').map(v => v.trim()).filter(Boolean) : [];
-const configuredOrigins = Array.from(new Set([...(parseOrigins(process.env.CORS_ORIGIN)), ...defaultOrigins]));
-const isWildcardMatch = (pattern, origin) => {
-  if (!pattern.startsWith('https://*.')) return false;
-  const domain = pattern.slice('https://*.'.length);
-  if (!origin.startsWith('https://')) return false;
-  const o = origin.replace('https://', '');
-  return o === domain || o.endsWith('.' + domain);
-};
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
-  if (!configuredOrigins.length) return true;
-  if (configuredOrigins.includes('*')) return true;
-  if (configuredOrigins.includes(origin)) return true;
-  for (const p of configuredOrigins) {
-    if (isWildcardMatch(p, origin)) return true;
-  }
-  if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) return true;
-  return false;
-};
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (isAllowedOrigin(origin)) callback(null, true);
-    else callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-};
-
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions)); // Enable pre-flight across-the-board
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
@@ -118,7 +112,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes); // Add the new auth routes
 app.use('/api', legacyAuthRouter); // Legacy login/register
-app.use('/api', studentsRouter);
+app.use('/api/students', studentsRouter);
 app.use('/api/address', addressRouter);
 app.use('/api/master', masterRouter);
 app.use('/api/upload', uploadRouter);
@@ -127,18 +121,37 @@ app.use('/api/class', classRoutes);
 // Compatibility: some clients expect /api/classes
 app.use('/api/classes', classRoutes);
 app.use('/api/classlist', classListRoutes);
-app.use('/api', teacherRoutes);
+app.use('/api/teachers', teacherRoutes);
 app.use('/api/subjects', subjectRouter);
-app.use('/api', attendanceRouter);
-app.use('/api', attendanceStatsRouter);
+app.use('/api/attendance', attendanceRouter);
+app.use('/api/attendance', attendanceStatsRouter);
 app.use('/api/scores', scoresRouter);
 app.use('/api/rankings', rankingsRouter);
-app.use('/api', notificationsRouter);
+app.use('/api/notifications', notificationsRouter);
+
+app.use('/auth', authRoutes);
+app.use('/', legacyAuthRouter);
+app.use('/students', studentsRouter);
+app.use('/address', addressRouter);
+app.use('/master', masterRouter);
+app.use('/upload', uploadRouter);
+app.use('/statistics', statisticsRoutes);
+app.use('/class', classRoutes);
+app.use('/classes', classRoutes);
+app.use('/classlist', classListRoutes);
+app.use('/teachers', teacherRoutes);
+app.use('/subjects', subjectRouter);
+app.use('/attendance', attendanceRouter);
+app.use('/attendance', attendanceStatsRouter);
+app.use('/scores', scoresRouter);
+app.use('/rankings', rankingsRouter);
+app.use('/notifications', notificationsRouter);
 
 // Serve uploaded fallback files
 const uploadsDir = path.join(process.cwd(), 'uploads')
 try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }) } catch (e) {}
 app.use('/uploads', express.static(uploadsDir))
+app.use('/api/uploads', express.static(uploadsDir))
 
 // Serve Vue app static files (Production)
 const distPath = path.join(process.cwd(), 'dist');

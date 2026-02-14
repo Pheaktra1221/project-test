@@ -1,6 +1,6 @@
 <script>
 import { ref, computed, toRefs, watch } from 'vue'
-import { imagePreview } from '../utils/helpers'
+import { imagePreview, API_BASE_URL } from '../utils/helpers'
 
 export default {
   inheritAttrs: false,
@@ -25,13 +25,6 @@ export default {
   emits: ['navigate', 'toggleCollapse', 'close', 'viewProfile'],
   setup(props, { emit }) {
     const { activePage, isOpen, collapsed, user } = toRefs(props)
-    const API_BASE_URL = (() => {
-      const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-      if (base) return base.endsWith('/api') ? base : base + '/api'
-      const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-      if (url) return url.endsWith('/api') ? url : url + '/api'
-      return '/api'
-    })()
     const imageError = ref(false)
 
     const handleNavigation = (pageId) => {

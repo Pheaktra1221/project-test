@@ -5,8 +5,6 @@ import { verifyToken, checkRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use('/attendance', verifyToken);
-
 // Helper: Check teacher permissions
 const checkTeacherPermission = async (teacherId, classId, subjectId = null) => {
   const connection = await pool.getConnection();
@@ -42,7 +40,7 @@ const getUserIdForRole = (user) => {
 };
 
 // 1. Get attendance statuses
-router.get('/attendance/statuses', async (req, res) => {
+router.get('/statuses', async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
@@ -57,7 +55,7 @@ router.get('/attendance/statuses', async (req, res) => {
 });
 
 // 2. Create session
-router.post('/attendance/sessions', checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
+router.post('/sessions', verifyToken, checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
   let connection;
   try {
     const { SessionName, SessionDate, ClassID, SubjectID, StartTime, EndTime, Status = 'open' } = req.body;
@@ -152,7 +150,7 @@ router.post('/attendance/sessions', checkRole(['admin', 'teacher', 'classrep']),
 });
 
 // 3. Get sessions with role-based filtering
-router.get('/attendance/sessions', async (req, res) => {
+router.get('/sessions', verifyToken, async (req, res) => {
   let connection;
   try {
     const { date, classId, subjectId } = req.query;
@@ -200,21 +198,21 @@ router.get('/attendance/sessions', async (req, res) => {
       params.push(subjectId);
     }
 
+    // Role-based filtering
     if (user.role === 'teacher' && user.teacherId) {
-      conditions.push(`
-        (s.SubjectID IN (
+      // Teachers see sessions for their assigned classes/subjects
+      conditions.push(`(
+        s.SubjectID IN (
           SELECT Subject1 FROM teacher WHERE TeacherID = ?
           UNION
           SELECT Subject2 FROM teacher WHERE TeacherID = ?
         ) OR s.ClassID IN (
           SELECT ClassID FROM teacher_classes WHERE TeacherID = ?
-        ))
-      `);
+        )
+      )`);
       params.push(user.teacherId, user.teacherId, user.teacherId);
-    } else if (user.role === 'classrep' && user.classId) {
-      conditions.push('s.ClassID = ?');
-      params.push(user.classId);
-    } else if (user.role === 'student' && user.classId) {
+    } else if ((user.role === 'classrep' || user.role === 'student') && user.classId) {
+      // Students/reps see sessions for their own class
       conditions.push('s.ClassID = ?');
       params.push(user.classId);
     }
@@ -223,7 +221,7 @@ router.get('/attendance/sessions', async (req, res) => {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY s.SessionDate DESC, s.StartTime, s.ClassID';
+    query += ' ORDER BY s.SessionDate DESC, s.StartTime DESC';
 
     const [rows] = await connection.execute(query, params);
 
@@ -236,8 +234,8 @@ router.get('/attendance/sessions', async (req, res) => {
   }
 });
 
-// 4. Get session by ID
-router.get('/attendance/sessions/:id', async (req, res) => {
+// 4. Get single session
+router.get('/sessions/:id', verifyToken, async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
@@ -305,7 +303,7 @@ router.get('/attendance/sessions/:id', async (req, res) => {
 });
 
 // 5. Update session
-router.put('/attendance/sessions/:id', checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
+router.put('/sessions/:id', verifyToken, checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
@@ -359,24 +357,32 @@ router.put('/attendance/sessions/:id', checkRole(['admin', 'teacher', 'classrep'
       });
     }
     
-    const fields = Object.keys(updates)
-      .filter(key => key !== 'SessionID')
-      .map(key => `${key} = ?`)
-      .join(', ');
+    const allowedUpdates = ['SessionName', 'SessionDate', 'StartTime', 'EndTime', 'Status'];
+    const fields = [];
+    const params = [];
     
-    const values = [
-      ...Object.values(updates).filter((_, i) => Object.keys(updates)[i] !== 'SessionID'),
-      id
-    ];
+    Object.keys(updates).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        fields.push(`${key} = ?`);
+        params.push(updates[key]);
+      }
+    });
     
-    const updateQuery = `UPDATE attendance_sessions SET ${fields}, UpdatedAt = NOW() WHERE SessionID = ?`;
+    if (fields.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No valid fields to update' 
+      });
+    }
     
-    const [result] = await connection.execute(updateQuery, values);
+    params.push(id);
+    const query = `UPDATE attendance_sessions SET ${fields.join(', ')}, UpdatedAt = NOW() WHERE SessionID = ?`;
+    
+    await connection.execute(query, params);
     
     res.json({ 
       success: true, 
-      message: 'Session updated successfully',
-      affectedRows: result.affectedRows 
+      message: 'Session updated successfully' 
     });
   } catch (error) {
     console.error('Error updating session:', error);
@@ -386,8 +392,8 @@ router.put('/attendance/sessions/:id', checkRole(['admin', 'teacher', 'classrep'
   }
 });
 
-// 6. Update session status
-router.put('/attendance/sessions/:id/status', checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
+// 6. Change session status
+router.patch('/sessions/:id/status', verifyToken, checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
@@ -395,10 +401,10 @@ router.put('/attendance/sessions/:id/status', checkRole(['admin', 'teacher', 'cl
     const user = req.user;
     const userId = getUserIdForRole(user);
     
-    if (!['open', 'closed', 'pending'].includes(status)) {
+    if (!['open', 'closed'].includes(status)) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Invalid status value' 
+        message: 'Invalid status' 
       });
     }
     
@@ -470,7 +476,7 @@ router.put('/attendance/sessions/:id/status', checkRole(['admin', 'teacher', 'cl
 });
 
 // 7. Get attendance for session
-router.get('/attendance/session/:sessionId', async (req, res) => {
+router.get('/session/:sessionId', verifyToken, async (req, res) => {
   let connection;
   try {
     const { sessionId } = req.params;
@@ -529,7 +535,7 @@ router.get('/attendance/session/:sessionId', async (req, res) => {
 });
 
 // 8. Save batch attendance
-router.post('/attendance/session/:sessionId/batch', checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
+router.post('/session/:sessionId/batch', verifyToken, checkRole(['admin', 'teacher', 'classrep']), async (req, res) => {
   let connection;
   try {
     const { sessionId } = req.params;
@@ -633,7 +639,7 @@ router.post('/attendance/session/:sessionId/batch', checkRole(['admin', 'teacher
 });
 
 // 9. Get student attendance summary
-router.get('/attendance/student/:studentId/summary', async (req, res) => {
+router.get('/student/:studentId/summary', verifyToken, async (req, res) => {
   let connection;
   try {
     const { studentId } = req.params;

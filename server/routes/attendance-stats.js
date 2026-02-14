@@ -6,7 +6,7 @@ import { verifyToken, checkRole } from '../middleware/auth.js'; // Add auth midd
 const router = express.Router();
 
 // Get daily attendance statistics (Admin/Teacher access)
-router.get('/attendance/stats/daily', verifyToken, async (req, res) => {
+router.get('/stats/daily', verifyToken, async (req, res) => {
   try {
     const { date } = req.query;
     const targetDate = date || new Date().toISOString().split('T')[0];
@@ -72,7 +72,7 @@ router.get('/attendance/stats/daily', verifyToken, async (req, res) => {
 });
 
 // Get monthly attendance overview (with role filtering)
-router.get('/attendance/stats/monthly', verifyToken, async (req, res) => {
+router.get('/stats/monthly', verifyToken, async (req, res) => {
   try {
     const { month, year } = req.query;
     const currentDate = new Date();
@@ -124,7 +124,7 @@ router.get('/attendance/stats/monthly', verifyToken, async (req, res) => {
 });
 
 // NEW: Print session report
-router.get('/attendance/sessions/:id/print', verifyToken, async (req, res) => {
+router.get('/sessions/:id/print', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const connection = await pool.getConnection();
@@ -137,11 +137,11 @@ router.get('/attendance/sessions/:id/print', verifyToken, async (req, res) => {
         c.ClassLetter,
         sub.SubjectName,
         sub.SubjectCode,
-        CONCAT(t.FirstName, ' ', t.LastName) as TeacherName
+        CONCAT(t.TeacherFirstName, ' ', t.TeacherLastName) as TeacherName
       FROM attendance_sessions s
       LEFT JOIN class c ON s.ClassID = c.ClassId
       LEFT JOIN subject sub ON s.SubjectID = sub.SubjectID
-      LEFT JOIN teacher t ON sub.TeacherID = t.TeacherID
+      LEFT JOIN teacher t ON s.CreatorRole = 'teacher' AND s.CreatedBy = t.TeacherID
       WHERE s.SessionID = ?
     `;
     
@@ -229,7 +229,7 @@ function formatTimeForDisplay(timeString) {
 }
 
 // NEW: Get sessions for printing (with filters)
-router.get('/attendance/sessions/print/all', verifyToken, checkRole(['admin']), async (req, res) => {
+router.get('/sessions/print/all', verifyToken, checkRole(['admin']), async (req, res) => {
   try {
     const { startDate, endDate, classId, subjectId, teacherId } = req.query;
     
@@ -248,13 +248,13 @@ router.get('/attendance/sessions/print/all', verifyToken, checkRole(['admin']), 
         c.ClassLetter,
         sub.SubjectName,
         sub.SubjectCode,
-        CONCAT(t.FirstName, ' ', t.LastName) as TeacherName,
+        CONCAT(t.TeacherFirstName, ' ', t.TeacherLastName) as TeacherName,
         COUNT(a.AttendanceID) as AttendanceCount,
         COUNT(CASE WHEN ast.StatusCode = 'P' THEN 1 END) as PresentCount
       FROM attendance_sessions s
       LEFT JOIN class c ON s.ClassID = c.ClassId
       LEFT JOIN subject sub ON s.SubjectID = sub.SubjectID
-      LEFT JOIN teacher t ON sub.TeacherID = t.TeacherID
+      LEFT JOIN teacher t ON s.CreatorRole = 'teacher' AND s.CreatedBy = t.TeacherID
       LEFT JOIN attendance a ON s.SessionID = a.SessionID
       LEFT JOIN attendance_status ast ON a.StatusID = ast.StatusID
     `;
@@ -303,7 +303,7 @@ router.get('/attendance/sessions/print/all', verifyToken, checkRole(['admin']), 
     query += `
       GROUP BY s.SessionID, s.SessionName, s.SessionDate, s.StartTime, s.EndTime, 
                s.Status, s.CreatedAt, c.ClassName, c.ClassLetter, 
-               sub.SubjectName, sub.SubjectCode, t.FirstName, t.LastName
+               sub.SubjectName, sub.SubjectCode, t.TeacherFirstName, t.TeacherLastName
       ORDER BY s.SessionDate DESC, s.StartTime
     `;
     

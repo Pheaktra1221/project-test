@@ -1,13 +1,7 @@
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/helpers.js'
 
-const raw = import.meta.env.VITE_API_URL || ''
-const base = (() => {
-  const cleaned = raw.replace(/\/$/, '')
-  if (!cleaned) return '/api'
-  return cleaned.endsWith('/api') ? cleaned : cleaned + '/api'
-})()
-
-const instance = axios.create({ baseURL: base })
+const instance = axios.create({ baseURL: API_BASE_URL })
 
 export async function login(credentials) {
   try {

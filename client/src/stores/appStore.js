@@ -1,15 +1,10 @@
 import { defineStore } from 'pinia'
 import { io } from 'socket.io-client'
+import { SOCKET_BASE_URL, API_BASE_URL } from '../utils/helpers'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
-    apiBaseUrl: (() => {
-      const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-      if (base) return base.endsWith('/api') ? base : base + '/api'
-      const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-      if (url) return url.endsWith('/api') ? url : url + '/api'
-      return '/api'
-    })(),
+    apiBaseUrl: API_BASE_URL,
     user: null,
     authorized: false,
     socket: null,
@@ -30,12 +25,7 @@ export const useAppStore = defineStore('app', {
     },
     connectSocket() {
       if (this.socket) return
-      let backendUrl = (this.apiBaseUrl || '').replace(/\/$/, '')
-      if (!backendUrl) {
-        backendUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_DEFAULT || 'https://evident-coreen-tra-2a78039b.koyeb.app/api').replace(/\/$/, '')
-      }
-      if (backendUrl.endsWith('/api')) backendUrl = backendUrl.slice(0, -4)
-      const socket = io(backendUrl, { path: '/socket.io', transports: ['websocket'] })
+      const socket = io(SOCKET_BASE_URL, { path: '/socket.io', transports: ['websocket'] })
       this.socket = socket
       socket.on('connect', () => {
         this.socketConnected = true

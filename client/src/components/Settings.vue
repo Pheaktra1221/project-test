@@ -54,14 +54,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { API_BASE_URL } from '../utils/helpers'
 
-const API_BASE_URL = (() => {
-  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  if (base) return base.endsWith('/api') ? base : base + '/api'
-  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-  if (url) return url.endsWith('/api') ? url : url + '/api'
-  return '/api'
-})()
 const router = useRouter()
 
 const checking = ref(false)

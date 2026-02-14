@@ -436,6 +436,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, onErrorCaptured } from 'vue';
 import { io } from 'socket.io-client';
+import { SOCKET_BASE_URL, API_BASE_URL } from '../utils/helpers';
 import { Bar } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
 import * as XLSX from 'xlsx';
@@ -443,8 +444,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
-
-const API_BASE_URL = '/api';
 
 console.log('RankingForm setup started');
 
@@ -825,13 +824,7 @@ onMounted(async () => {
       selectedMonth.value = months[monthIndex].en;
   }
 
-  // Connect to WebSocket
-  // Use relative connection to allow Vite proxy to handle it
-  // This works for both localhost and network access (e.g. 192.168.x.x)
-  socket.value = io({
-    withCredentials: true,
-    transports: ['websocket', 'polling']
-  });
+  socket.value = io(SOCKET_BASE_URL, { path: '/socket.io', transports: ['websocket'] })
 
   socket.value.on('connect', () => {
     console.log('Connected to WebSocket server');

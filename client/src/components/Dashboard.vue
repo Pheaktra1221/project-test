@@ -181,7 +181,7 @@ import axios from 'axios';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 // Axios configuration
-axios.defaults.withCredentials = true;
+axios.defaults.withCredentials = false;
 
 // State
 const loading = ref(true);

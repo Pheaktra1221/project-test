@@ -355,8 +355,8 @@
 <script setup>
 import { ref, computed, onMounted, watch, reactive } from 'vue';
 import { useAppStore } from '../stores/appStore';
+import { API_BASE_URL } from '../utils/helpers';
 
-const API_BASE_URL = '/api';
 const appStore = useAppStore();
 
 // State

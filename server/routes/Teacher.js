@@ -11,7 +11,7 @@ const emitRefresh = (req, resource) => {
 };
 
 // Get all teachers with pagination
-router.get('/teachers', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 50, search = '' } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -72,7 +72,7 @@ router.get('/teachers', async (req, res) => {
 });
 
 // Get single teacher
-router.get('/teachers/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const connection = await pool.getConnection();
@@ -111,7 +111,7 @@ router.get('/teachers/:id', async (req, res) => {
 });
 
 // Create teacher
-router.post('/teachers', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const body = req.body || {};
     const TeacherID = body.TeacherID ?? body.teacherid ?? body.teacherId ?? body.id ?? null;
@@ -187,7 +187,7 @@ router.post('/teachers', async (req, res) => {
 });
 
 // Update teacher
-router.put('/teachers/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -240,7 +240,7 @@ router.put('/teachers/:id', async (req, res) => {
 });
 
 // Delete teacher
-router.delete('/teachers/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const connection = await pool.getConnection();

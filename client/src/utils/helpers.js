@@ -7,6 +7,11 @@ export const API_BASE_URL = (() => {
   return fallback.endsWith('/api') ? fallback : fallback + '/api'
 })()
 
+export const SOCKET_BASE_URL = (() => {
+  const base = API_BASE_URL.replace(/\/$/, '')
+  return base.endsWith('/api') ? base.slice(0, -4) : base
+})()
+
 export const imagePreview = (raw) => {
   if (!raw) return '';
   try {

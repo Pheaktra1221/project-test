@@ -4,7 +4,7 @@ import { io } from 'socket.io-client'
 import { useAppStore } from '../stores/appStore'
 import { useRouter } from 'vue-router'
 import logo from '../assets/vue.svg'
-import { imagePreview, formatTime } from '../utils/helpers'
+import { imagePreview, formatTime, API_BASE_URL } from '../utils/helpers'
 
 const props = defineProps({
   user: { type: Object, default: null }
@@ -51,13 +51,6 @@ const openSettings = () => {
 }
 
 const imageError = ref(false)
-const API_BASE_URL = (() => {
-  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  if (base) return base.endsWith('/api') ? base : base + '/api'
-  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-  if (url) return url.endsWith('/api') ? url : url + '/api'
-  return '/api'
-})()
 const token = () => localStorage.getItem('token')
 
 const userRole = computed(() => props.user?.role?.toLowerCase() || 'student')

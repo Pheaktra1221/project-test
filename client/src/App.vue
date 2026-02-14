@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard.vue'
 import Navbar from './components/Navbar.vue'
 import Sidebar from './components/Sidebar.vue'
 import { useAppStore } from './stores/appStore'
+import { API_BASE_URL } from './utils/helpers'
 
 const router = useRouter()
 const route = useRoute()
@@ -16,13 +17,6 @@ const currentUser = ref(null)
 const currentView = ref('dashboard')
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
-const API_BASE_URL = (() => {
-  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  if (base) return base.endsWith('/api') ? base : base + '/api'
-  const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-  if (url) return url.endsWith('/api') ? url : url + '/api'
-  return '/api'
-})()
 const presenceInterval = ref(null)
 
 const updateCurrentView = (path) => {
