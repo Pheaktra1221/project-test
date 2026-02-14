@@ -37,46 +37,54 @@ if (!process.env.PORT) {
 
 const app = express();
 
-// Middleware - Apply CORS as early as possible
+// CORS configuration - Allow all origins
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow all origins
-    callback(null, true);
-  },
-  credentials: false,
+  origin: true, // This reflects the request origin back
+  credentials: true, // Allow credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 };
 
+// Apply CORS middleware to all routes first
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
 
-// Custom middleware to ensure CORS headers for socket.io polling
-app.use((req, res, next) => {
-  if (req.url.startsWith('/socket.io/')) {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    if (req.method === 'OPTIONS') {
-      return res.sendStatus(200);
-    }
-  }
-  next();
-});
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
+// Create HTTP server
 const httpServer = createServer(app);
+
+// Socket.IO with explicit CORS configuration
 const io = new Server(httpServer, {
   cors: {
-    origin: (origin, callback) => {
-      // Allow all origins
-      callback(null, true);
-    },
+    origin: true, // This allows any origin
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: false,
+    credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
   },
   allowEIO3: true,
-  transports: ['websocket', 'polling']
+  transports: ['polling', 'websocket'], // Polling first for better compatibility
+  path: '/socket.io/',
+  // Add these settings to ensure CORS headers are set on polling responses
+  allowRequest: (req, callback) => {
+    callback(null, true); // Allow all requests
+  }
+});
+
+// Middleware to set CORS headers for all requests including socket.io polling
+app.use((req, res, next) => {
+  // Set CORS headers for every request
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
 // Socket.io connection handler
@@ -96,7 +104,6 @@ io.on('connection', (socket) => {
 
 // Make io available globally or via app
 app.set('io', io);
-
 
 // Middleware
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -196,8 +203,6 @@ httpServer.listen(PORT, HOST, () => {
     // best-effort
   }
 });
-// Ensure leftover route mounts (kept for compatibility)
-app.use('/api/class', classRoutes);
 
 // Global error handler: always return JSON for errors
 app.use((err, req, res, next) => {
@@ -205,5 +210,3 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   res.status(500).json({ success: false, message: err?.message || 'Internal Server Error' });
 });
-
-// Start server on all network interfaces
