@@ -123,17 +123,21 @@ const pingPresence = async () => {
   const token = localStorage.getItem('token')
   if (!token) return
   try {
-    await fetch(`${API_BASE_URL}/auth/presence`, {
+    let res = await fetch(`${API_BASE_URL}/auth/presence`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`
       }
-    }).catch(() => fetch(`${API_BASE_URL}/api/auth/presence`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }))
+    })
+    
+    if (res.status === 404) {
+      await fetch(`${API_BASE_URL}/api/auth/presence`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+    }
   } catch (e) {}
 }
 

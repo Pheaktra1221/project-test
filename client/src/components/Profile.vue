@@ -313,9 +313,23 @@ const loadProfile = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+    let res = await fetch(`${API_BASE_URL}/auth/profile`, {
       headers: getAuthHeaders()
     })
+    
+    // If 404, try the /api prefix fallback
+    if (res.status === 404) {
+      console.warn('Profile route not found at /auth/profile, trying /api/auth/profile fallback')
+      res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        headers: getAuthHeaders()
+      })
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.message || `Failed to load profile (${res.status})`)
+    }
+
     const data = await res.json()
     if (!data.success) {
       throw new Error(data.message || 'Failed to load profile')
@@ -343,9 +357,23 @@ const loadUsers = async () => {
   usersLoading.value = true
   usersError.value = ''
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/users`, {
+    let res = await fetch(`${API_BASE_URL}/auth/users`, {
       headers: getAuthHeaders()
     })
+
+    // If 404, try the /api prefix fallback
+    if (res.status === 404) {
+      console.warn('Users route not found at /auth/users, trying /api/auth/users fallback')
+      res = await fetch(`${API_BASE_URL}/api/auth/users`, {
+        headers: getAuthHeaders()
+      })
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.message || `Failed to load users (${res.status})`)
+    }
+
     const data = await res.json()
     if (!data.success) {
       throw new Error(data.message || 'Failed to load users')

@@ -1261,10 +1261,7 @@ const loadUserResources = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     
-    const res = await fetch(`${API_BASE_URL}/attendance/user-resources`, {
-      headers: getAuthHeaders()
-    });
-    
+    const res = await fetchWithAuth('/attendance/user-resources');
     const data = await res.json();
     
     if (data.success) {
@@ -1287,10 +1284,7 @@ const loadUserProfile = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     
-    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
-      headers: getAuthHeaders()
-    });
-    
+    const res = await fetchWithAuth('/auth/profile');
     const data = await res.json();
     
     if (data.success) {
@@ -1315,6 +1309,34 @@ const getAuthHeaders = () => {
   };
 };
 
+// Generic fetch wrapper with 404 fallback resilience
+const fetchWithAuth = async (url, options = {}) => {
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  
+  let res = await fetch(fullUrl, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...options.headers
+    }
+  });
+
+  // If 404, try the /api prefix fallback
+  if (res.status === 404 && !url.includes('/api/') && !url.startsWith('http')) {
+    const fallbackUrl = `${API_BASE_URL}/api${url.startsWith('/') ? url : '/' + url}`;
+    console.warn(`Route not found at ${url}, trying ${fallbackUrl} fallback`);
+    res = await fetch(fallbackUrl, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers
+      }
+    });
+  }
+
+  return res;
+};
+
 const loadSessionsForDate = async () => {
   try {
     loading.value = true;
@@ -1332,12 +1354,10 @@ const loadSessionsForDate = async () => {
       params.push(`subjectId=${selectedSubjectId.value}`);
     }
     
-    if (params.length) url += `?${params.join('&')}`;
+    let endpoint = '/attendance/sessions';
+    if (params.length) endpoint += `?${params.join('&')}`;
     
-    const res = await fetch(url, {
-      headers: getAuthHeaders()
-    });
-    
+    const res = await fetchWithAuth(endpoint);
     const data = await res.json();
     
     if (data.success) {
@@ -1356,9 +1376,7 @@ const loadSessionsForDate = async () => {
 
 const loadAttendanceStatuses = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/attendance/statuses`, {
-      headers: getAuthHeaders()
-    });
+    const res = await fetchWithAuth('/attendance/statuses');
     const data = await res.json();
     if (data.success) {
       attendanceStatuses.value = data.data;
@@ -1371,9 +1389,7 @@ const loadAttendanceStatuses = async () => {
 const loadStudentsForClass = async (classId) => {
   try {
     loadingAttendance.value = true;
-    const res = await fetch(`${API_BASE_URL}/classes/${classId}/students?limit=100`, {
-      headers: getAuthHeaders()
-    });
+    const res = await fetchWithAuth(`/classes/${classId}/students?limit=100`);
     const data = await res.json();
     
     if (data.success) {
@@ -1390,9 +1406,7 @@ const loadStudentsForClass = async (classId) => {
 const loadAttendanceForSession = async (sessionId) => {
   attendanceRecords.value = [];
   try {
-    const res = await fetch(`${API_BASE_URL}/attendance/session/${sessionId}`, {
-      headers: getAuthHeaders()
-    });
+    const res = await fetchWithAuth(`/attendance/session/${sessionId}`);
     const data = await res.json();
     
     if (data.success) {
@@ -1444,12 +1458,11 @@ const saveSession = async () => {
   try {
     const method = isEditingSession.value ? 'PUT' : 'POST';
     const url = isEditingSession.value 
-      ? `${API_BASE_URL}/attendance/sessions/${sessionForm.value.SessionID}`
-      : `${API_BASE_URL}/attendance/sessions`;
+      ? `/attendance/sessions/${sessionForm.value.SessionID}`
+      : `/attendance/sessions`;
 
-    const res = await fetch(url, {
+    const res = await fetchWithAuth(url, {
       method,
-      headers: getAuthHeaders(),
       body: JSON.stringify(sessionForm.value)
     });
 
@@ -1477,9 +1490,8 @@ const toggleSessionStatus = async () => {
   try {
     const newStatus = selectedSession.value.Status === 'open' ? 'closed' : 'open';
     
-    const res = await fetch(`${API_BASE_URL}/attendance/sessions/${selectedSession.value.SessionID}/status`, {
+    const res = await fetchWithAuth(`/attendance/sessions/${selectedSession.value.SessionID}/status`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
       body: JSON.stringify({ status: newStatus })
     });
 
@@ -1501,9 +1513,8 @@ const deleteSession = async (session) => {
   }
   
   try {
-    const res = await fetch(`${API_BASE_URL}/attendance/sessions/${session.SessionID}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
+    const res = await fetchWithAuth(`/attendance/sessions/${session.SessionID}`, {
+      method: 'DELETE'
     });
     
     const data = await res.json();
@@ -1602,9 +1613,8 @@ const saveAttendance = async () => {
       record.SessionID === selectedSession.value.SessionID
     );
 
-    const res = await fetch(`${API_BASE_URL}/attendance/session/${selectedSession.value.SessionID}/batch`, {
+    const res = await fetchWithAuth(`/attendance/session/${selectedSession.value.SessionID}/batch`, {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify({ records: sessionRecords })
     });
 
@@ -1675,10 +1685,8 @@ const loadSessionsForPrint = async () => {
       params.append('subjectId', printFilters.value.subjectId);
     }
     
-    const url = `${API_BASE_URL}/attendance/sessions/print/all?${params.toString()}`;
-    const res = await fetch(url, {
-      headers: getAuthHeaders()
-    });
+    const endpoint = `/attendance/sessions/print/all?${params.toString()}`;
+    const res = await fetchWithAuth(endpoint);
     
     const data = await res.json();
     
@@ -1708,9 +1716,7 @@ const printCurrentSession = async () => {
 
 const printSingleSession = async (sessionId) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/attendance/sessions/${sessionId}/print`, {
-      headers: getAuthHeaders()
-    });
+    const res = await fetchWithAuth(`/attendance/sessions/${sessionId}/print`);
     
     const data = await res.json();
     
@@ -1740,9 +1746,7 @@ const printSelectedSessions = async () => {
     };
     
     for (const sessionId of selectedPrintSessions.value) {
-      const res = await fetch(`${API_BASE_URL}/attendance/sessions/${sessionId}/print`, {
-        headers: getAuthHeaders()
-      });
+      const res = await fetchWithAuth(`/attendance/sessions/${sessionId}/print`);
       
       const data = await res.json();
       if (data.success) {
@@ -2017,9 +2021,7 @@ const exportAllSessions = async () => {
   }
   
   try {
-    const res = await fetch(`${API_BASE_URL}/attendance/export/all`, {
-      headers: getAuthHeaders()
-    });
+    const res = await fetchWithAuth('/attendance/export/all');
     
     if (res.ok) {
       const blob = await res.blob();

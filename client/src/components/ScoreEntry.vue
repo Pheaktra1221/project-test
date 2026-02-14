@@ -444,8 +444,15 @@ const fetchWithAuth = async (url, options = {}) => {
     ...options.headers
   };
   
-  const res = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
-  if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+  let res = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
+  
+  // If 404, try the /api prefix fallback
+  if (res.status === 404 && !url.startsWith('/api')) {
+    console.warn(`Route not found at ${url}, trying /api${url} fallback`);
+    res = await fetch(`${API_BASE_URL}/api${url.startsWith('/') ? url.slice(1) : url}`, { ...options, headers });
+  }
+
+  if (!res.ok) throw new Error(`API Error: ${res.statusText} (${res.status})`);
   return res.json();
 };
 

@@ -302,7 +302,18 @@ const fetchDashboardStatistics = async () => {
   try {
     loading.value = true;
     
-    const response = await axios.get('/statistics/dashboard');
+    let response;
+    try {
+      response = await axios.get('/statistics/dashboard');
+    } catch (err) {
+      // If axios throws an error, check if it's a 404
+      if (err.response && err.response.status === 404) {
+        console.warn('Dashboard route not found at /statistics/dashboard, trying /api/statistics/dashboard fallback');
+        response = await axios.get('/api/statistics/dashboard');
+      } else {
+        throw err;
+      }
+    }
     
     console.debug('Dashboard API Response:', response?.data);
 
