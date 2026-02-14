@@ -205,7 +205,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { API_BASE_URL, imagePreview } from '../utils/helpers'
+import { API_BASE_URL, imagePreview, fetchWithAuth } from '../utils/helpers'
 
 const profile = ref({
   id: '',
@@ -246,14 +246,7 @@ const newUser = ref({
   role: 'teacher'
 })
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token')
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
-}
-
+// getAuthHeaders and local fetch usages removed in favor of fetchWithAuth global helper
 
 const profileImage = computed(() => {
   if (imageError.value) return ''
@@ -313,17 +306,7 @@ const loadProfile = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
-    let res = await fetch(`${API_BASE_URL}/auth/profile`, {
-      headers: getAuthHeaders()
-    })
-    
-    // If 404, try the /api prefix fallback
-    if (res.status === 404) {
-      console.warn('Profile route not found at /auth/profile, trying /api/auth/profile fallback')
-      res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-        headers: getAuthHeaders()
-      })
-    }
+    const res = await fetchWithAuth('/auth/profile')
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}))
@@ -357,17 +340,7 @@ const loadUsers = async () => {
   usersLoading.value = true
   usersError.value = ''
   try {
-    let res = await fetch(`${API_BASE_URL}/auth/users`, {
-      headers: getAuthHeaders()
-    })
-
-    // If 404, try the /api prefix fallback
-    if (res.status === 404) {
-      console.warn('Users route not found at /auth/users, trying /api/auth/users fallback')
-      res = await fetch(`${API_BASE_URL}/api/auth/users`, {
-        headers: getAuthHeaders()
-      })
-    }
+    const res = await fetchWithAuth('/auth/users')
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}))
@@ -394,9 +367,8 @@ const createUser = async () => {
   }
   creatingUser.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/users`, {
+    const res = await fetchWithAuth('/auth/users', {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify({
         username: newUser.value.username,
         password: newUser.value.password,
@@ -438,9 +410,8 @@ const saveProfile = async () => {
     }
     if (form.value.password) payload.password = form.value.password
 
-    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+    const res = await fetchWithAuth('/auth/profile', {
       method: 'PUT',
-      headers: getAuthHeaders(),
       body: JSON.stringify(payload)
     })
     const data = await res.json()

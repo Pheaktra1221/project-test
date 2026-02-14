@@ -12,6 +12,42 @@ export const SOCKET_BASE_URL = (() => {
   return base.endsWith('/api') ? base.slice(0, -4) : base
 })()
 
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
+export const fetchWithAuth = async (url, options = {}) => {
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : '/' + url}`;
+  
+  let res = await fetch(fullUrl, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...options.headers
+    }
+  });
+
+  // If 404, try the /api prefix fallback
+  if (res.status === 404 && !url.includes('/api/') && !url.startsWith('http')) {
+    const cleanPath = url.startsWith('/') ? url : '/' + url;
+    const fallbackUrl = `${API_BASE_URL}/api${cleanPath}`;
+    console.warn(`Fetch: 404 on ${url}, retrying with ${fallbackUrl}`);
+    res = await fetch(fallbackUrl, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers
+      }
+    });
+  }
+
+  return res;
+};
+
 export const imagePreview = (raw) => {
   if (!raw) return '';
   try {

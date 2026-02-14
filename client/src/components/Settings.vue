@@ -54,7 +54,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { API_BASE_URL } from '../utils/helpers'
+import { fetchWithAuth } from '../utils/helpers'
 
 const router = useRouter()
 
@@ -66,9 +66,8 @@ const checkServer = async () => {
   checking.value = true
   statusMessage.value = ''
   try {
-    const res = await fetch(`${API_BASE_URL}/health`)
-    const data = await res.json()
-    if (res.ok && (data.status || data.message || data.success)) {
+    const data = await fetchWithAuth('/health')
+    if (data.status || data.message || data.success) {
       statusType.value = 'success'
       statusMessage.value = 'ម៉ាស៊ីនមេដំណើរការបានជោគជ័យ'
     } else {

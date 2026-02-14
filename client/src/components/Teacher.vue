@@ -901,7 +901,7 @@
 <script setup>
 import { ref, onMounted, computed, defineEmits, watch, nextTick } from "vue";
 import { useAppStore } from "../stores/appStore";
-import { API_BASE_URL } from "../utils/helpers";
+import { API_BASE_URL, fetchWithAuth } from "../utils/helpers";
 
 const appStore = useAppStore();
 
@@ -1128,20 +1128,11 @@ onMounted(async () => {
   checkAuthStatus();
 });
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  };
-};
-
 const loadMasterData = async () => {
   try {
-    const headers = getAuthHeaders();
     const [subjectRes, provRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/subjects`, { headers }),
-      fetch(`${API_BASE_URL}/address/provinces`, { headers }),
+      fetchWithAuth('/subjects'),
+      fetchWithAuth('/address/provinces'),
     ]);
 
     if (subjectRes.ok) {
@@ -1176,9 +1167,8 @@ const loadMasterData = async () => {
 const loadTeachers = async () => {
   try {
     loading.value = true;
-    const res = await fetch(
-      `${API_BASE_URL}/teachers?page=${currentPage.value}&limit=${pageSize.value}&search=${encodeURIComponent(searchText.value)}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/teachers?page=${currentPage.value}&limit=${pageSize.value}&search=${encodeURIComponent(searchText.value)}`
     );
     
     if (!res.ok) {
@@ -1214,7 +1204,7 @@ watch(
 
 const checkAuthStatus = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/upload/auth/status`, { headers: getAuthHeaders() });
+    const res = await fetchWithAuth('/upload/auth/status');
     if (res.ok) {
       const data = await res.json();
       userAuth.value = !!(data && data.authorized);
@@ -1229,7 +1219,7 @@ const authorizeUser = async () => {
   try {
     console.log('Starting authorization process for Teacher...');
     
-    const debugRes = await fetch(`${API_BASE_URL}/upload/auth/debug`, { headers: getAuthHeaders() });
+    const debugRes = await fetchWithAuth('/upload/auth/debug');
     const debugData = await debugRes.json();
     
     if (!debugData || !debugData.success) {
@@ -1244,7 +1234,7 @@ const authorizeUser = async () => {
       return;
     }
     
-    const res = await fetch(`${API_BASE_URL}/upload/auth/url`, { headers: getAuthHeaders() });
+    const res = await fetchWithAuth('/upload/auth/url');
     const data = await res.json();
     
     if (!data || !data.success || !data.url) {
@@ -1278,7 +1268,7 @@ const authorizeUser = async () => {
     
     const pollForCompletion = async () => {
       try {
-        const statusRes = await fetch(`${API_BASE_URL}/upload/auth/status`, { headers: getAuthHeaders() });
+        const statusRes = await fetchWithAuth('/upload/auth/status');
         const statusData = await statusRes.json();
         
         if (statusData && statusData.authorized) {
@@ -1436,7 +1426,7 @@ const clearSearch = () => {
 
 const getNextAvailableTeacherId = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/teachers-id/next`, { headers: getAuthHeaders() });
+    const res = await fetchWithAuth('/teachers-id/next');
     const data = await res.json();
     if (data && data.success && data.nextId) return Number(data.nextId);
     return 1;
@@ -1495,7 +1485,7 @@ const editTeacher = async (teacher) => {
   isNewTeacher.value = false;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/teachers/${teacher.TeacherID}`, { headers: getAuthHeaders() });
+    const res = await fetchWithAuth(`/teachers/${teacher.TeacherID}`);
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
@@ -1570,9 +1560,8 @@ const deleteTeacher = async (teacherId) => {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
+    const res = await fetchWithAuth(`/teachers/${teacherId}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     
     const data = await res.json();
@@ -1598,8 +1587,8 @@ const saveTeacher = async () => {
   try {
     const method = isNewTeacher.value ? "POST" : "PUT";
     const url = isNewTeacher.value
-      ? `${API_BASE_URL}/teachers`
-      : `${API_BASE_URL}/teachers/${formData.value.TeacherID}`;
+      ? "/teachers"
+      : `/teachers/${formData.value.TeacherID}`;
 
     const payload = { ...formData.value };
     
@@ -1614,13 +1603,8 @@ const saveTeacher = async () => {
       }
     });
 
-    const res = await fetch(url, {
+    const res = await fetchWithAuth(url, {
       method,
-      headers: { 
-        ...getAuthHeaders(),
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
       body: JSON.stringify(payload),
     });
 
@@ -1816,9 +1800,8 @@ const loadBirthDistricts = async () => {
   }
   
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/address/districts/${formData.value.TeacherBirthProvince}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/address/districts/${formData.value.TeacherBirthProvince}`
     );
     if (res.ok) {
       const data = await res.json();
@@ -1842,9 +1825,8 @@ const loadBirthCommunes = async () => {
   }
   
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/address/communes/${formData.value.TeacherBirthDistrict}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/address/communes/${formData.value.TeacherBirthDistrict}`
     );
     if (res.ok) {
       const data = await res.json();
@@ -1866,9 +1848,8 @@ const loadBirthVillages = async () => {
   }
   
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/address/villages/${formData.value.TeacherBirthCommune}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/address/villages/${formData.value.TeacherBirthCommune}`
     );
     if (res.ok) {
       const data = await res.json();
@@ -1891,9 +1872,8 @@ const loadCurrentDistricts = async () => {
   }
   
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/address/districts/${formData.value.TeacherCurrentProvince}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/address/districts/${formData.value.TeacherCurrentProvince}`
     );
     if (res.ok) {
       const data = await res.json();
@@ -1917,9 +1897,8 @@ const loadCurrentCommunes = async () => {
   }
   
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/address/communes/${formData.value.TeacherCurrentDistrict}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/address/communes/${formData.value.TeacherCurrentDistrict}`
     );
     if (res.ok) {
       const data = await res.json();
@@ -1941,9 +1920,8 @@ const loadCurrentVillages = async () => {
   }
   
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/address/villages/${formData.value.TeacherCurrentCommune}`,
-      { headers: getAuthHeaders() }
+    const res = await fetchWithAuth(
+      `/address/villages/${formData.value.TeacherCurrentCommune}`
     );
     if (res.ok) {
       const data = await res.json();

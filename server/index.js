@@ -102,6 +102,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api', legacyAuthRouter); // Legacy login/register
 app.use('/api/students', studentsRouter);
+app.use('/api/student', studentsRouter); // Alias for singular requests
 app.use('/api/address', addressRouter);
 app.use('/api/master', masterRouter);
 app.use('/api/upload', uploadRouter);
@@ -122,6 +123,7 @@ app.use('/auth', authRoutes);
 app.use('/notifications', notificationsRouter);
 app.use('/', legacyAuthRouter);
 app.use('/students', studentsRouter);
+app.use('/student', studentsRouter); // Alias for singular requests
 app.use('/address', addressRouter);
 app.use('/master', masterRouter);
 app.use('/upload', uploadRouter);
@@ -141,6 +143,24 @@ const uploadsDir = path.join(process.cwd(), 'uploads')
 try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }) } catch (e) {}
 app.use('/uploads', express.static(uploadsDir))
 app.use('/api/uploads', express.static(uploadsDir))
+
+// NEW: Catch all unmatched /api requests and return a clean JSON 404
+// This prevents the frontend from crashing with the "<!DOCTYPE" JSON error
+app.all('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
+// NEW: Catch all unmatched non-prefixed requests (legacy)
+const legacyPrefixes = ['/auth', '/notifications', '/student', '/students', '/address', '/master', '/upload', '/statistics', '/class', '/classes', '/classlist', '/teachers', '/subjects', '/attendance', '/scores', '/rankings'];
+app.all(legacyPrefixes.map(p => `${p}/*`), (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`
+  });
+});
 
 // Serve Vue app static files (Production)
 const distPath = path.join(process.cwd(), 'dist');

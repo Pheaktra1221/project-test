@@ -355,7 +355,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, reactive } from 'vue';
 import { useAppStore } from '../stores/appStore';
-import { API_BASE_URL } from '../utils/helpers';
+import { fetchWithAuth } from '../utils/helpers';
 
 const appStore = useAppStore();
 
@@ -435,25 +435,19 @@ const filteredStudents = computed(() => {
     });
 });
 
-// API Helper
-const fetchWithAuth = async (url, options = {}) => {
-  const token = localStorage.getItem('token');
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...options.headers
-  };
-  
-  let res = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
-  
-  // If 404, try the /api prefix fallback
-  if (res.status === 404 && !url.startsWith('/api')) {
-    console.warn(`Route not found at ${url}, trying /api${url} fallback`);
-    res = await fetch(`${API_BASE_URL}/api${url.startsWith('/') ? url.slice(1) : url}`, { ...options, headers });
-  }
+// Data Helpers
+const getScore = (studentId, subjectId) => {
+  const record = gridData.value.scores.find(
+    s => s.StudentId === studentId && s.SubjectId === subjectId
+  );
+  return record ? record.Score : '';
+};
 
-  if (!res.ok) throw new Error(`API Error: ${res.statusText} (${res.status})`);
-  return res.json();
+const getRemark = (studentId) => {
+  const record = gridData.value.remarks.find(
+    r => r.StudentId === studentId
+  );
+  return record ? record.Remarks : '';
 };
 
 // Initialization
@@ -571,21 +565,6 @@ watch(
     }
   },
 );
-
-// Data Helpers
-const getScore = (studentId, subjectId) => {
-  const record = gridData.value.scores.find(
-    s => s.StudentId === studentId && s.SubjectId === subjectId
-  );
-  return record ? record.Score : '';
-};
-
-const getRemark = (studentId) => {
-  const record = gridData.value.remarks.find(
-    r => r.StudentId === studentId
-  );
-  return record ? record.Remarks : '';
-};
 
 // Validation Helper
 const hasValidationError = (studentId, subjectId) => {

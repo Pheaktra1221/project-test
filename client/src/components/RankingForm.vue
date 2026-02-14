@@ -436,7 +436,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, onErrorCaptured } from 'vue';
 import { io } from 'socket.io-client';
-import { SOCKET_BASE_URL, API_BASE_URL } from '../utils/helpers';
+import { SOCKET_BASE_URL, fetchWithAuth } from '../utils/helpers';
 import { Bar } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
 import * as XLSX from 'xlsx';
@@ -447,16 +447,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 console.log('RankingForm setup started');
 
-// Auth Helper
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  };
-};
-
-// Socket
+// State
 const socket = ref(null);
 const error = ref(null);
 
@@ -466,7 +457,6 @@ onErrorCaptured((err, instance, info) => {
   return false; // Stop propagation
 });
 
-// State
 const classes = ref([]);
 const subjects = ref([]);
 const rankings = ref([]);
@@ -591,10 +581,7 @@ const initializeYears = () => {
 
 const loadClasses = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/class`, {
-      headers: getAuthHeaders()
-    });
-    const data = await res.json();
+    const data = await fetchWithAuth('/class');
     if (data.success) {
       classes.value = data.data;
     } else {
@@ -608,11 +595,7 @@ const loadClasses = async () => {
 
 const loadSubjects = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/subjects`, {
-      headers: getAuthHeaders()
-    });
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const data = await res.json();
+    const data = await fetchWithAuth('/subjects');
     if (data.success) {
       // Add "All Subjects" option
       subjects.value = [{ SubjectId: -1, SubjectName: 'មុខវិជ្ជាទាំងអស់' }, ...data.data];
@@ -652,10 +635,7 @@ const loadRankings = async () => {
       subjectId: selectedSubjectId.value ? selectedSubjectId.value.toString() : ''
     });
 
-    const res = await fetch(`${API_BASE_URL}/rankings?${params}`, {
-      headers: getAuthHeaders()
-    });
-    const data = await res.json();
+    const data = await fetchWithAuth(`/rankings?${params}`);
 
     if (data.success) {
       rankings.value = data.data;

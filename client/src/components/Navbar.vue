@@ -4,7 +4,7 @@ import { io } from 'socket.io-client'
 import { useAppStore } from '../stores/appStore'
 import { useRouter } from 'vue-router'
 import logo from '../assets/vue.svg'
-import { imagePreview, formatTime, API_BASE_URL } from '../utils/helpers'
+import { imagePreview, formatTime, fetchWithAuth } from '../utils/helpers'
 
 const props = defineProps({
   user: { type: Object, default: null }
@@ -76,21 +76,7 @@ const handleImageError = () => {
 
 const loadNotifications = async () => {
   try {
-    let res = await fetch(`${API_BASE_URL}/notifications`, {
-      headers: {
-        Authorization: `Bearer ${token()}`
-      }
-    })
-    
-    if (res.status === 404) {
-      res = await fetch(`${API_BASE_URL}/api/notifications`, {
-        headers: {
-          Authorization: `Bearer ${token()}`
-        }
-      })
-    }
-
-    const data = await res.json()
+    const data = await fetchWithAuth('/notifications')
     if (data && data.success && Array.isArray(data.data)) {
       notifications.value = data.data
     }
@@ -105,12 +91,8 @@ const sendBroadcast = async () => {
   sendingMessage.value = true
   messageError.value = ''
   try {
-    let res = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
+    const data = await fetchWithAuth('/notifications/broadcast', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token()}`,
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         title: messageTitle.value.trim(),
         message: messageBody.value.trim(),
@@ -118,22 +100,6 @@ const sendBroadcast = async () => {
       })
     })
 
-    if (res.status === 404) {
-      res = await fetch(`${API_BASE_URL}/api/notifications/broadcast`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: messageTitle.value.trim(),
-          message: messageBody.value.trim(),
-          type: 'info'
-        })
-      })
-    }
-
-    const data = await res.json()
     if (data && data.success && data.data) {
       notifications.value = [data.data, ...notifications.value]
       messageTitle.value = ''

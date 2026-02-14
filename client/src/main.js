@@ -14,6 +14,28 @@ if (existingToken) {
 	axios.defaults.headers.common['Authorization'] = `Bearer ${existingToken}`;
 }
 
+// Global axios 404 fallback interceptor
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If we get a 404 and haven't tried the /api prefix yet
+    if (error.response?.status === 404 && !originalRequest._retry && !originalRequest.url.includes('/api/')) {
+      originalRequest._retry = true;
+      
+      // Construct the fallback URL with /api prefix
+      const url = originalRequest.url.startsWith('/') ? originalRequest.url : `/${originalRequest.url}`;
+      originalRequest.url = `/api${url}`;
+      
+      console.warn(`Axios: 404 on ${url}, retrying with /api${url}`);
+      return axios(originalRequest);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 const app = createApp(App)
 
 // Pinia

@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard.vue'
 import Navbar from './components/Navbar.vue'
 import Sidebar from './components/Sidebar.vue'
 import { useAppStore } from './stores/appStore'
-import { API_BASE_URL } from './utils/helpers'
+import { API_BASE_URL, fetchWithAuth } from './utils/helpers'
 
 const router = useRouter()
 const route = useRoute()
@@ -123,21 +123,9 @@ const pingPresence = async () => {
   const token = localStorage.getItem('token')
   if (!token) return
   try {
-    let res = await fetch(`${API_BASE_URL}/auth/presence`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    await fetchWithAuth('/auth/presence', {
+      method: 'POST'
     })
-    
-    if (res.status === 404) {
-      await fetch(`${API_BASE_URL}/api/auth/presence`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-    }
   } catch (e) {}
 }
 
@@ -145,19 +133,7 @@ const refreshProfileFromServer = async () => {
   const token = localStorage.getItem('token')
   if (!token) return
   try {
-    let res = await fetch(`${API_BASE_URL}/auth/profile`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    
-    if (res.status === 404) {
-      res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-    }
+    const res = await fetchWithAuth('/auth/profile')
 
     const data = await res.json()
     if (data && data.success && data.data) {

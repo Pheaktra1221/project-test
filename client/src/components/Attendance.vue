@@ -1062,7 +1062,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
-import { imagePreview, formatDate, formatTime, API_BASE_URL } from '../utils/helpers';
+import { imagePreview, formatDate, formatTime, API_BASE_URL, fetchWithAuth } from '../utils/helpers';
 
 // State
 const userProfile = ref({});
@@ -1301,41 +1301,7 @@ const loadUserProfile = async () => {
 };
 
 // API Functions
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  };
-};
-
-// Generic fetch wrapper with 404 fallback resilience
-const fetchWithAuth = async (url, options = {}) => {
-  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-  
-  let res = await fetch(fullUrl, {
-    ...options,
-    headers: {
-      ...getAuthHeaders(),
-      ...options.headers
-    }
-  });
-
-  // If 404, try the /api prefix fallback
-  if (res.status === 404 && !url.includes('/api/') && !url.startsWith('http')) {
-    const fallbackUrl = `${API_BASE_URL}/api${url.startsWith('/') ? url : '/' + url}`;
-    console.warn(`Route not found at ${url}, trying ${fallbackUrl} fallback`);
-    res = await fetch(fallbackUrl, {
-      ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers
-      }
-    });
-  }
-
-  return res;
-};
+// (Local getAuthHeaders and fetchWithAuth removed in favor of global helpers)
 
 const loadSessionsForDate = async () => {
   try {
