@@ -824,7 +824,12 @@ onMounted(async () => {
       selectedMonth.value = months[monthIndex].en;
   }
 
-  socket.value = io(SOCKET_BASE_URL, { path: '/socket.io', transports: ['websocket'] })
+  socket.value = io(SOCKET_BASE_URL, { 
+    path: '/socket.io', 
+    transports: ['websocket'],
+    upgrade: false,
+    rememberUpgrade: true
+  })
 
   socket.value.on('connect', () => {
     console.log('Connected to WebSocket server');

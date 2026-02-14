@@ -1,10 +1,10 @@
 export const API_BASE_URL = (() => {
   const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  if (base) return base.endsWith('/api') ? base : base + '/api'
+  if (base) return base
   const url = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-  if (url) return url.endsWith('/api') ? url : url + '/api'
+  if (url) return url
   const fallback = (import.meta.env.VITE_API_DEFAULT || 'https://evident-coreen-tra-2a78039b.koyeb.app/api').replace(/\/$/, '')
-  return fallback.endsWith('/api') ? fallback : fallback + '/api'
+  return fallback
 })()
 
 export const SOCKET_BASE_URL = (() => {

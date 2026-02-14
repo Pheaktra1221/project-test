@@ -39,7 +39,10 @@ const app = express();
 
 // Middleware - Apply CORS as early as possible
 const corsOptions = {
-  origin: '*',
+  origin: (origin, callback) => {
+    // Allow all origins
+    callback(null, true);
+  },
   credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
@@ -64,12 +67,15 @@ app.use((req, res, next) => {
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow all origins
+      callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: false,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
   },
-  allowEIO3: true, // Compatibility for older clients
+  allowEIO3: true,
   transports: ['websocket', 'polling']
 });
 
@@ -110,7 +116,8 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.use('/api/auth', authRoutes); // Add the new auth routes
+app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationsRouter);
 app.use('/api', legacyAuthRouter); // Legacy login/register
 app.use('/api/students', studentsRouter);
 app.use('/api/address', addressRouter);
@@ -127,9 +134,10 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/attendance', attendanceStatsRouter);
 app.use('/api/scores', scoresRouter);
 app.use('/api/rankings', rankingsRouter);
-app.use('/api/notifications', notificationsRouter);
 
+// Base mounts for non-prefixed requests
 app.use('/auth', authRoutes);
+app.use('/notifications', notificationsRouter);
 app.use('/', legacyAuthRouter);
 app.use('/students', studentsRouter);
 app.use('/address', addressRouter);
@@ -145,7 +153,6 @@ app.use('/attendance', attendanceRouter);
 app.use('/attendance', attendanceStatsRouter);
 app.use('/scores', scoresRouter);
 app.use('/rankings', rankingsRouter);
-app.use('/notifications', notificationsRouter);
 
 // Serve uploaded fallback files
 const uploadsDir = path.join(process.cwd(), 'uploads')

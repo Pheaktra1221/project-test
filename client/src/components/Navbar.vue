@@ -76,11 +76,20 @@ const handleImageError = () => {
 
 const loadNotifications = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/notifications`, {
+    let res = await fetch(`${API_BASE_URL}/notifications`, {
       headers: {
         Authorization: `Bearer ${token()}`
       }
     })
+    
+    if (res.status === 404) {
+      res = await fetch(`${API_BASE_URL}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token()}`
+        }
+      })
+    }
+
     const data = await res.json()
     if (data && data.success && Array.isArray(data.data)) {
       notifications.value = data.data
@@ -96,7 +105,7 @@ const sendBroadcast = async () => {
   sendingMessage.value = true
   messageError.value = ''
   try {
-    const res = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
+    let res = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token()}`,
@@ -108,6 +117,22 @@ const sendBroadcast = async () => {
         type: 'info'
       })
     })
+
+    if (res.status === 404) {
+      res = await fetch(`${API_BASE_URL}/api/notifications/broadcast`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: messageTitle.value.trim(),
+          message: messageBody.value.trim(),
+          type: 'info'
+        })
+      })
+    }
+
     const data = await res.json()
     if (data && data.success && data.data) {
       notifications.value = [data.data, ...notifications.value]

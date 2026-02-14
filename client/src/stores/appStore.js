@@ -25,7 +25,16 @@ export const useAppStore = defineStore('app', {
     },
     connectSocket() {
       if (this.socket) return
-      const socket = io(SOCKET_BASE_URL, { path: '/socket.io', transports: ['websocket'] })
+      // Force websocket transport and disable polling to avoid CORS issues
+      const socket = io(SOCKET_BASE_URL, { 
+        path: '/socket.io', 
+        transports: ['websocket'],
+        upgrade: false,
+        rememberUpgrade: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        timeout: 20000
+      })
       this.socket = socket
       socket.on('connect', () => {
         this.socketConnected = true

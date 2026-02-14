@@ -128,7 +128,12 @@ const pingPresence = async () => {
       headers: {
         Authorization: `Bearer ${token}`
       }
-    })
+    }).catch(() => fetch(`${API_BASE_URL}/api/auth/presence`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }))
   } catch (e) {}
 }
 
@@ -136,11 +141,20 @@ const refreshProfileFromServer = async () => {
   const token = localStorage.getItem('token')
   if (!token) return
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+    let res = await fetch(`${API_BASE_URL}/auth/profile`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
+    
+    if (res.status === 404) {
+      res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+    }
+
     const data = await res.json()
     if (data && data.success && data.data) {
       const merged = { ...(currentUser.value || {}), ...data.data }
