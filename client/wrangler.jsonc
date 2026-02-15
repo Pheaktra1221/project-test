@@ -1,0 +1,7 @@
+{
+  "name": "clientnpx wrangler deploy --assets=./client/distnpx wrangler deploy --assets=./client/dist",
+  "compatibility_date": "2026-02-15",
+  "assets": {
+    "directory": "./dist"
+  }
+}
